@@ -3,16 +3,17 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"github.com/gobwas/ws"
+	"github.com/gobwas/ws/wsutil"
 	"io"
+	"log"
 	"math/rand"
 	"net"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/gobwas/ws"
-	"github.com/gobwas/ws/wsutil"
 )
 
 // User represents user connection.
@@ -31,8 +32,13 @@ type User struct {
 // Receive reads next message from user's underlying connection.
 // It blocks until full message received.
 func (u *User) Receive() error {
+	log.Println("fuckyo222u")
 	req, err := u.readRequest()
+	//msg, _, err := wsutil.ReadClientData(u.conn)
+	fmt.Println(req)
 	if err != nil {
+
+		log.Println("fuckyo222999999u")
 		u.conn.Close()
 		return err
 	}
@@ -42,32 +48,14 @@ func (u *User) Receive() error {
 	}
 	switch req.Method {
 	case "rename":
-		name, ok := req.Params["name"].(string)
-		if !ok {
-			return u.writeErrorTo(req, Object{
-				"error": "bad params",
-			})
-		}
-		prev, ok := u.chat.Rename(u, name)
-		if !ok {
-			return u.writeErrorTo(req, Object{
-				"error": "already exists",
-			})
-		}
-		u.chat.Broadcast("rename", Object{
-			"prev": prev,
-			"name": name,
-			"time": timestamp(),
-		})
-		return u.writeResultTo(req, nil)
+
+		//u.chat.Broadcast("rename", nil)
+		//return u.writeResultTo(req, nil)
 	case "publish":
-		req.Params["author"] = u.name
-		req.Params["time"] = timestamp()
+
 		u.chat.Broadcast("publish", req.Params)
 	default:
-		return u.writeErrorTo(req, Object{
-			"error": "not implemented",
-		})
+		return u.writeErrorTo(req, "fuck")
 	}
 	return nil
 }
@@ -95,21 +83,21 @@ func (u *User) readRequest() (*Request, error) {
 	return req, nil
 }
 
-func (u *User) writeErrorTo(req *Request, err Object) error {
+func (u *User) writeErrorTo(req *Request, err string) error {
 	return u.write(Error{
 		ID:    req.ID,
 		Error: err,
 	})
 }
 
-func (u *User) writeResultTo(req *Request, result Object) error {
+func (u *User) writeResultTo(req *Request, result string) error {
 	return u.write(Response{
 		ID:     req.ID,
 		Result: result,
 	})
 }
 
-func (u *User) writeNotice(method string, params Object) error {
+func (u *User) writeNotice(method string, params string) error {
 	return u.write(Request{
 		Method: method,
 		Params: params,
@@ -181,13 +169,8 @@ func (c *Chat) Register(conn net.Conn) *User {
 	}
 	c.mu.Unlock()
 
-	user.writeNotice("hello", Object{
-		"name": user.name,
-	})
-	c.Broadcast("greet", Object{
-		"name": user.name,
-		"time": timestamp(),
-	})
+	user.writeNotice("hello", "fuck")
+	c.Broadcast("greet", "you")
 
 	return user
 }
@@ -202,10 +185,7 @@ func (c *Chat) Remove(user *User) {
 		return
 	}
 
-	c.Broadcast("goodbye", Object{
-		"name": user.name,
-		"time": timestamp(),
-	})
+	c.Broadcast("goodbye", "gg")
 }
 
 // Rename renames user.
@@ -225,7 +205,7 @@ func (c *Chat) Rename(user *User, name string) (prev string, ok bool) {
 }
 
 // Broadcast sends message to all alive users.
-func (c *Chat) Broadcast(method string, params Object) error {
+func (c *Chat) Broadcast(method string, params string) error {
 	var buf bytes.Buffer
 
 	w := wsutil.NewWriter(&buf, ws.StateServerSide, ws.OpText)

@@ -79,6 +79,7 @@ func main() {
 				// closed at least write end of the connection or connections
 				// itself. So we want to stop receive events about such conn
 				// and remove it from the chat registry.
+				log.Println("fuckyou")
 				poller.Stop(desc)
 				chat.Remove(user)
 				return
