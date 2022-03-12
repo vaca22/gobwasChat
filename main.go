@@ -56,14 +56,14 @@ func main() {
 		safeConn := deadliner{conn, *ioTimeout}
 
 		// Zero-copy upgrade to WebSocket connection.
-		hs, err := ws.Upgrade(safeConn)
-		if err != nil {
-			log.Printf("%s: upgrade error: %v", nameConn(conn), err)
-			conn.Close()
-			return
-		}
+		//hs, err := ws.Upgrade(safeConn)
+		//if err != nil {
+		//	log.Printf("%s: upgrade error: %v", nameConn(conn), err)
+		//	connconn.Close()
+		//	return
+		//}
 
-		log.Printf("%s: established websocket connection: %+v", nameConn(conn), hs)
+		//	log.Printf("%s: established websocket connection: %+v", nameConn(conn), hs)
 
 		// Register incoming user in chat.
 		user := chat.Register(safeConn)
@@ -102,60 +102,69 @@ func main() {
 	}
 
 	// Create incoming connections listener.
-	ln, err := net.Listen("tcp", *addr)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//ln, err := net.Listen("tcp", *addr)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//log.Printf("websocket is listening on %s", ln.Addr().String())
 
-	log.Printf("websocket is listening on %s", ln.Addr().String())
-
-	// Create netpoll descriptor for the listener.
-	// We use OneShot here to manually resume events stream when we want to.
-	acceptDesc := netpoll.Must(netpoll.HandleListener(
-		ln, netpoll.EventRead|netpoll.EventOneShot,
-	))
-
-	// accept is a channel to signal about next incoming connection Accept()
-	// results.
-	accept := make(chan error, 1)
-
-	// Subscribe to events about listener.
-	poller.Start(acceptDesc, func(e netpoll.Event) {
-		// We do not want to accept incoming connection when goroutine pool is
-		// busy. So if there are no free goroutines during 1ms we want to
-		// cooldown the server and do not receive connection for some short
-		// time.
-		err := pool.ScheduleTimeout(time.Millisecond, func() {
-			conn, err := ln.Accept()
-			if err != nil {
-				accept <- err
-				return
-			}
-
-			accept <- nil
-			handle(conn)
-		})
-		if err == nil {
-			err = <-accept
-		}
+	http.ListenAndServe(":8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
-			if err != ErrScheduleTimeout {
-				goto cooldown
-			}
-			if ne, ok := err.(net.Error); ok && ne.Temporary() {
-				goto cooldown
-			}
-
-			log.Fatalf("accept error: %v", err)
-
-		cooldown:
-			delay := 5 * time.Millisecond
-			log.Printf("accept error: %v; retrying in %s", err, delay)
-			time.Sleep(delay)
+			conn.Close()
+			return
+			// handle error
 		}
-
-		poller.Resume(acceptDesc)
-	})
+		handle(conn)
+	}))
+	//// Create netpoll descriptor for the listener.
+	//// We use OneShot here to manually resume events stream when we want to.
+	//acceptDesc := netpoll.Must(netpoll.HandleListener(
+	//	ln, netpoll.EventRead|netpoll.EventOneShot,
+	//))
+	//
+	//// accept is a channel to signal about next incoming connection Accept()
+	//// results.
+	//accept := make(chan error, 1)
+	//
+	//// Subscribe to events about listener.
+	//poller.Start(acceptDesc, func(e netpoll.Event) {
+	//	// We do not want to accept incoming connection when goroutine pool is
+	//	// busy. So if there are no free goroutines during 1ms we want to
+	//	// cooldown the server and do not receive connection for some short
+	//	// time.
+	//	err := pool.ScheduleTimeout(time.Millisecond, func() {
+	//		conn, err := ln.Accept()
+	//		if err != nil {
+	//			accept <- err
+	//			return
+	//		}
+	//
+	//		accept <- nil
+	//		handle(conn)
+	//	})
+	//	if err == nil {
+	//		err = <-accept
+	//	}
+	//	if err != nil {
+	//		if err != ErrScheduleTimeout {
+	//			goto cooldown
+	//		}
+	//		if ne, ok := err.(net.Error); ok && ne.Temporary() {
+	//			goto cooldown
+	//		}
+	//
+	//		log.Fatalf("accept error: %v", err)
+	//
+	//	cooldown:
+	//		delay := 5 * time.Millisecond
+	//		log.Printf("accept error: %v; retrying in %s", err, delay)
+	//		time.Sleep(delay)
+	//	}
+	//
+	//	poller.Resume(acceptDesc)
+	//})
 
 	<-exit
 }
