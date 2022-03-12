@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"net"
 	"time"
@@ -105,13 +106,26 @@ func main() {
 	http.ListenAndServe(":8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
-			conn.Close()
+			err := conn.Close()
+			if err != nil {
+				return
+			}
 			return
 			// handle error
 		}
 		a1 := r.URL.Query()
-		a2 := a1["fruck"][0]
-		handle(conn, a2)
+		a2, ok := a1["myid"]
+		if !ok {
+			fmt.Println("error user")
+			err := conn.Close()
+			if err != nil {
+				return
+			}
+			return
+		}
+		a3 := a2[0]
+		fmt.Println(r.RemoteAddr)
+		handle(conn, a3)
 	}))
 
 	<-exit

@@ -3,11 +3,9 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"io"
-	"log"
 	"net"
 	"sync"
 	"time"
@@ -27,13 +25,13 @@ type User struct {
 // Receive reads next message from user's underlying connection.
 // It blocks until full message received.
 func (u *User) Receive() error {
-	log.Println("fuckyo222u")
+	//log.Println("fuckyo222u")
 	req, err := u.readRequest()
 	//msg, _, err := wsutil.ReadClientData(u.conn)
-	fmt.Println(req)
+	//fmt.Println(req)
 	if err != nil {
 
-		log.Println("fuckyo222999999u")
+		//log.Println("fuckyo222999999u")
 		u.conn.Close()
 		return err
 	}
@@ -42,26 +40,15 @@ func (u *User) Receive() error {
 		return nil
 	}
 	c := u.chat
-	fmt.Println("gagaga  " + req.TOID)
+	//fmt.Println("gagaga  " + req.TOID)
 	ux, ok := c.ns[req.TOID]
 	if ok {
-		fmt.Println("fuckkkkkkkkk")
+		//fmt.Println("fuckkkkkkkkk")
 		c.pool.Schedule(func() {
 			ux.write(req)
 		})
 	}
 
-	//switch req.Method {
-	//case "rename":
-	//
-	//	//u.chat.Broadcast("rename", nil)
-	//	//return u.writeResultTo(req, nil)
-	//case "publish":
-	//
-	//	u.chat.Broadcast("publish", req.Params)
-	//default:
-	//	return u.writeErrorTo(req, "fuck")
-	//}
 	return nil
 }
 
