@@ -25,13 +25,11 @@ type User struct {
 // Receive reads next message from user's underlying connection.
 // It blocks until full message received.
 func (u *User) Receive() error {
-	//log.Println("fuckyo222u")
+
 	req, err := u.readRequest()
-	//msg, _, err := wsutil.ReadClientData(u.conn)
-	//fmt.Println(req)
+
 	if err != nil {
 
-		//log.Println("fuckyo222999999u")
 		u.conn.Close()
 		return err
 	}
@@ -43,7 +41,7 @@ func (u *User) Receive() error {
 	//fmt.Println("gagaga  " + req.TOID)
 	ux, ok := c.ns[req.TOID]
 	if ok {
-		//fmt.Println("fuckkkkkkkkk")
+
 		c.pool.Schedule(func() {
 			ux.write(req)
 		})
@@ -153,7 +151,7 @@ func (c *Chat) Register(conn net.Conn, uid string) *User {
 	}
 	c.mu.Unlock()
 
-	//user.writeNotice("hello", "fuck")
+	//user.writeNotice("hello", "dd")
 	//c.Broadcast("greet", "you")
 
 	return user
