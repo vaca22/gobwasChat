@@ -50,7 +50,7 @@ func main() {
 	// it and stores it as a chat user in Chat instance.
 	//
 	// We will call it below within accept() loop.
-	handle := func(conn net.Conn) {
+	handle := func(conn net.Conn, uid string) {
 		// NOTE: we wrap conn here to show that ws could work with any kind of
 		// io.ReadWriter.
 		safeConn := deadliner{conn, *ioTimeout}
@@ -66,7 +66,7 @@ func main() {
 		//	log.Printf("%s: established websocket connection: %+v", nameConn(conn), hs)
 
 		// Register incoming user in chat.
-		user := chat.Register(safeConn)
+		user := chat.Register(safeConn, uid)
 
 		// Create netpoll event descriptor for conn.
 		// We want to handle only read events of it.
@@ -116,7 +116,9 @@ func main() {
 			return
 			// handle error
 		}
-		handle(conn)
+		a1 := r.URL.Query()
+		a2 := a1["fruck"][0]
+		handle(conn, a2)
 	}))
 	//// Create netpoll descriptor for the listener.
 	//// We use OneShot here to manually resume events stream when we want to.

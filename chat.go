@@ -25,6 +25,7 @@ type User struct {
 	conn io.ReadWriteCloser
 
 	id   uint
+	uid  string
 	name string
 	chat *Chat
 }
@@ -46,17 +47,29 @@ func (u *User) Receive() error {
 		// Handled some control message.
 		return nil
 	}
-	switch req.Method {
-	case "rename":
+	c := u.chat
+	for _, u := range c.us {
+		if u.uid == req.Method {
+			c.pool.Schedule(func() {
+				u.write(Request{
+					Method: req.Method,
+					Params: "fuckyou",
+				})
+			})
+		}
 
-		//u.chat.Broadcast("rename", nil)
-		//return u.writeResultTo(req, nil)
-	case "publish":
-
-		u.chat.Broadcast("publish", req.Params)
-	default:
-		return u.writeErrorTo(req, "fuck")
 	}
+	//switch req.Method {
+	//case "rename":
+	//
+	//	//u.chat.Broadcast("rename", nil)
+	//	//return u.writeResultTo(req, nil)
+	//case "publish":
+	//
+	//	u.chat.Broadcast("publish", req.Params)
+	//default:
+	//	return u.writeErrorTo(req, "fuck")
+	//}
 	return nil
 }
 
@@ -151,10 +164,11 @@ func NewChat(pool *Pool) *Chat {
 }
 
 // Register registers new connection as a User.
-func (c *Chat) Register(conn net.Conn) *User {
+func (c *Chat) Register(conn net.Conn, uid string) *User {
 	user := &User{
 		chat: c,
 		conn: conn,
+		uid:  uid,
 	}
 
 	c.mu.Lock()
