@@ -8,10 +8,7 @@ import (
 	"github.com/gobwas/ws/wsutil"
 	"io"
 	"log"
-	"math/rand"
 	"net"
-	"sort"
-	"strconv"
 	"sync"
 	"time"
 )
@@ -23,10 +20,7 @@ import (
 type User struct {
 	io   sync.Mutex
 	conn io.ReadWriteCloser
-
-	id   uint
 	uid  string
-	name string
 	chat *Chat
 }
 
@@ -48,17 +42,15 @@ func (u *User) Receive() error {
 		return nil
 	}
 	c := u.chat
-	for _, u := range c.us {
-		if u.uid == req.Method {
-			c.pool.Schedule(func() {
-				u.write(Request{
-					Method: req.Method,
-					Params: "fuckyou",
-				})
-			})
-		}
-
+	fmt.Println("gagaga  " + req.TOID)
+	ux, ok := c.ns[req.TOID]
+	if ok {
+		fmt.Println("fuckkkkkkkkk")
+		c.pool.Schedule(func() {
+			ux.write(req)
+		})
 	}
+
 	//switch req.Method {
 	//case "rename":
 	//
@@ -112,7 +104,7 @@ func (u *User) writeResultTo(req *Request, result string) error {
 
 func (u *User) writeNotice(method string, params string) error {
 	return u.write(Request{
-		Method: method,
+		TOID:   method,
 		Params: params,
 	})
 }
@@ -142,11 +134,8 @@ func (u *User) writeRaw(p []byte) error {
 
 // Chat contains logic of user interaction.
 type Chat struct {
-	mu  sync.RWMutex
-	seq uint
-	us  []*User
-	ns  map[string]*User
-
+	mu   sync.RWMutex
+	ns   map[string]*User
 	pool *Pool
 	out  chan []byte
 }
@@ -158,7 +147,7 @@ func NewChat(pool *Pool) *Chat {
 		out:  make(chan []byte, 1),
 	}
 
-	go chat.writer()
+	//go chat.writer()
 
 	return chat
 }
@@ -173,18 +162,12 @@ func (c *Chat) Register(conn net.Conn, uid string) *User {
 
 	c.mu.Lock()
 	{
-		user.id = c.seq
-		user.name = c.randName()
-
-		c.us = append(c.us, user)
-		c.ns[user.name] = user
-
-		c.seq++
+		c.ns[user.uid] = user
 	}
 	c.mu.Unlock()
 
-	user.writeNotice("hello", "fuck")
-	c.Broadcast("greet", "you")
+	//user.writeNotice("hello", "fuck")
+	//c.Broadcast("greet", "you")
 
 	return user
 }
@@ -199,23 +182,7 @@ func (c *Chat) Remove(user *User) {
 		return
 	}
 
-	c.Broadcast("goodbye", "gg")
-}
-
-// Rename renames user.
-func (c *Chat) Rename(user *User, name string) (prev string, ok bool) {
-	c.mu.Lock()
-	{
-		if _, has := c.ns[name]; !has {
-			ok = true
-			prev, user.name = user.name, name
-			delete(c.ns, prev)
-			c.ns[name] = user
-		}
-	}
-	c.mu.Unlock()
-
-	return prev, ok
+	//c.Broadcast("goodbye", "gg")
 }
 
 // Broadcast sends message to all alive users.
@@ -225,7 +192,7 @@ func (c *Chat) Broadcast(method string, params string) error {
 	w := wsutil.NewWriter(&buf, ws.StateServerSide, ws.OpText)
 	encoder := json.NewEncoder(w)
 
-	r := Request{Method: method, Params: params}
+	r := Request{TOID: method, Params: params}
 	if err := encoder.Encode(r); err != nil {
 		return err
 	}
@@ -238,55 +205,15 @@ func (c *Chat) Broadcast(method string, params string) error {
 	return nil
 }
 
-// writer writes broadcast messages from chat.out channel.
-func (c *Chat) writer() {
-	for bts := range c.out {
-		c.mu.RLock()
-		us := c.us
-		c.mu.RUnlock()
-
-		for _, u := range us {
-			u := u // For closure.
-			c.pool.Schedule(func() {
-				u.writeRaw(bts)
-			})
-		}
-	}
-}
-
 // mutex must be held.
 func (c *Chat) remove(user *User) bool {
-	if _, has := c.ns[user.name]; !has {
+	if _, has := c.ns[user.uid]; !has {
 		return false
 	}
 
-	delete(c.ns, user.name)
-
-	i := sort.Search(len(c.us), func(i int) bool {
-		return c.us[i].id >= user.id
-	})
-	if i >= len(c.us) {
-		panic("chat: inconsistent state")
-	}
-
-	without := make([]*User, len(c.us)-1)
-	copy(without[:i], c.us[:i])
-	copy(without[i:], c.us[i+1:])
-	c.us = without
+	delete(c.ns, user.uid)
 
 	return true
-}
-
-func (c *Chat) randName() string {
-	var suffix string
-	for {
-		name := animals[rand.Intn(len(animals))] + suffix
-		if _, has := c.ns[name]; !has {
-			return name
-		}
-		suffix += strconv.Itoa(rand.Intn(10))
-	}
-	return ""
 }
 
 func timestamp() int64 {

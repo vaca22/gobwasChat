@@ -1,17 +1,17 @@
 package main
 
 type Request struct {
-	ID     int    `json:"id"`
-	Method string `json:"method"`
+	ID     string `json:"id"`
+	TOID   string `json:"toid"`
 	Params string `json:"params"`
 }
 
 type Response struct {
-	ID     int    `json:"id"`
+	ID     string `json:"id"`
 	Result string `json:"result"`
 }
 
 type Error struct {
-	ID    int    `json:"id"`
+	ID    string `json:"id"`
 	Error string `json:"error"`
 }

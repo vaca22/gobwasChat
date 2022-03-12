@@ -24,13 +24,6 @@ var (
 func main() {
 	flag.Parse()
 
-	if x := *debug; x != "" {
-		log.Printf("starting pprof server on %s", x)
-		go func() {
-			log.Printf("pprof server error: %v", http.ListenAndServe(x, nil))
-		}()
-	}
-
 	// Initialize netpoll instance. We will use it to be noticed about incoming
 	// events from listener of user connections.
 	poller, err := netpoll.New(nil)
@@ -120,53 +113,6 @@ func main() {
 		a2 := a1["fruck"][0]
 		handle(conn, a2)
 	}))
-	//// Create netpoll descriptor for the listener.
-	//// We use OneShot here to manually resume events stream when we want to.
-	//acceptDesc := netpoll.Must(netpoll.HandleListener(
-	//	ln, netpoll.EventRead|netpoll.EventOneShot,
-	//))
-	//
-	//// accept is a channel to signal about next incoming connection Accept()
-	//// results.
-	//accept := make(chan error, 1)
-	//
-	//// Subscribe to events about listener.
-	//poller.Start(acceptDesc, func(e netpoll.Event) {
-	//	// We do not want to accept incoming connection when goroutine pool is
-	//	// busy. So if there are no free goroutines during 1ms we want to
-	//	// cooldown the server and do not receive connection for some short
-	//	// time.
-	//	err := pool.ScheduleTimeout(time.Millisecond, func() {
-	//		conn, err := ln.Accept()
-	//		if err != nil {
-	//			accept <- err
-	//			return
-	//		}
-	//
-	//		accept <- nil
-	//		handle(conn)
-	//	})
-	//	if err == nil {
-	//		err = <-accept
-	//	}
-	//	if err != nil {
-	//		if err != ErrScheduleTimeout {
-	//			goto cooldown
-	//		}
-	//		if ne, ok := err.(net.Error); ok && ne.Temporary() {
-	//			goto cooldown
-	//		}
-	//
-	//		log.Fatalf("accept error: %v", err)
-	//
-	//	cooldown:
-	//		delay := 5 * time.Millisecond
-	//		log.Printf("accept error: %v; retrying in %s", err, delay)
-	//		time.Sleep(delay)
-	//	}
-	//
-	//	poller.Resume(acceptDesc)
-	//})
 
 	<-exit
 }
