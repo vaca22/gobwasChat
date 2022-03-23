@@ -101,7 +101,7 @@ func main() {
 	//
 	//log.Printf("websocket is listening on %s", ln.Addr().String())
 
-	http.ListenAndServe(":8080", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	http.ListenAndServe(":3003", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		conn, _, _, err := ws.UpgradeHTTP(r, w)
 		if err != nil {
 			err := conn.Close()

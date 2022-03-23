@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"io"
@@ -38,7 +39,7 @@ func (u *User) Receive() error {
 		return nil
 	}
 	c := u.chat
-	//fmt.Println("gagaga  " + req.TOID)
+	fmt.Println("gagaga  " + req.TOID)
 	ux, ok := c.ns[req.TOID]
 	if ok {
 
