@@ -39,7 +39,7 @@ func (u *User) Receive() error {
 		return nil
 	}
 	c := u.chat
-	fmt.Println("gagaga  " + req.TOID)
+	fmt.Println("gagagaxxx  " + req.ID)
 	//ux, ok := c.ns[req.TOID]
 	//if ok {
 	//
@@ -48,10 +48,15 @@ func (u *User) Receive() error {
 	//	})
 	//}
 
-	for _, value := range c.ns {
-		c.pool.Schedule(func() {
-			value.write(req)
-		})
+	for key, value := range c.ns {
+		fmt.Println("fuck2  " + key)
+		if key != req.ID {
+			fmt.Println("fuck  " + key)
+			c.pool.Schedule(func() {
+				value.write(req)
+			})
+		}
+
 	}
 
 	return nil
