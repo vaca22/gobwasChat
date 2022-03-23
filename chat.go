@@ -40,11 +40,17 @@ func (u *User) Receive() error {
 	}
 	c := u.chat
 	fmt.Println("gagaga  " + req.TOID)
-	ux, ok := c.ns[req.TOID]
-	if ok {
+	//ux, ok := c.ns[req.TOID]
+	//if ok {
+	//
+	//	c.pool.Schedule(func() {
+	//		ux.write(req)
+	//	})
+	//}
 
+	for _, value := range c.ns {
 		c.pool.Schedule(func() {
-			ux.write(req)
+			value.write(req)
 		})
 	}
 
